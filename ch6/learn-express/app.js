@@ -10,6 +10,11 @@ const dotenv = require('dotenv'); // 환경 변수 읽어들임
  * 
  */
 dotenv.config(); // dotenv 가 환경변수 읽어서 process.env 생성 -> ex) GET / 500 2.333 ms - 43
+
+// 라우터 설정
+const indexRouter = require('./routes');
+const userRouter = require('./routes/user');
+
 const app = express(); // express 모듈 할당
 app.set('port', process.env.PORT || 3000); // express 포트 설정
 
@@ -18,17 +23,20 @@ app.use('/', express.static(path.join(__dirname, 'public'))); // static 은 정�
 app.use(express.json());
 app.use(express.urlencoded({ extended: false}));
 app.use(cookieParser(process.env.COOKIE_SECRET));
-
 app.use(session({
     resave: false,
     saveUninitialized: false,
     secret: process.env.COOKIE_SECRET,
     cookie: {
-        httpOnly: true,
-        secure: false,
+      httpOnly: true,
+      secure: false,
     },
-    name: 'session-cookie'
+    name: 'session-cookie',
 }));
+
+// app.use 를 통해 app.js와 index.js, user.js 연결
+app.use('/', indexRouter); 
+app.use('/user', userRouter);
 
 
 app.use((req, res, next) => { // 주소 없음 -> 모든 요청에 대해 실행
@@ -36,13 +44,19 @@ app.use((req, res, next) => { // 주소 없음 -> 모든 요청에 대해 실행
     next(); // 다음 미들웨어로 넘어간다
 });
 
-app.get('/', (req, res, next) => {  // 주소 있음 -> ''/' 요청에 대해 실행
-    // res.send('hello express');
-    // res.sendFile(path.join(__dirname, '/index.html'));
-    console.log("GET 요청에만 실행");
-    next();
-}, (req, res) => {
-    throw new Error('에러는 에러 처리 미들웨어로....');
+app.use((req, res, next) => {
+    req.data = '데이터 넣기';
+    next(); 
+}, (req, res, next) => {
+    console.log('데이터 넣기');
+    next(); 
+});
+
+
+
+
+app.use((req, res, next) => {
+    res.status(404).send('Not Found');
 });
 
 app.use((err, req, res, next) => {
